@@ -3,7 +3,6 @@ package check
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"strings"
 	"time"
 
@@ -19,7 +18,7 @@ var (
 	checkFuncs = []func(*shit.IP, ...context.Context) bool{
 		CheckHTTPBIN,
 		CheckBaidu,
-		//CheckCountry,
+		CheckCountry,
 
 		// last check
 		CheckFuckWall,
@@ -183,11 +182,15 @@ func CheckBaidu(ip *shit.IP, ctx ...context.Context) bool {
 	}
 }
 
-type IPAPIJSON struct {
-	Country string `json:"country_code"`
+type IPINFOJSON struct {
+	Country string `json:"country"`
 }
 
 func CheckCountry(ip *shit.IP, ctx ...context.Context) bool {
+	if len(ip.Country) > 0 {
+		return true
+	}
+
 	opt := client.NewOption()
 	opt.Proxy = ip.String()
 	opt.Redirect = false
@@ -200,7 +203,7 @@ func CheckCountry(ip *shit.IP, ctx ...context.Context) bool {
 		return false
 	}
 
-	resp, err := cli.Get("http://ifconfig.io")
+	resp, err := cli.Get("http://ipinfo.io")
 	if err != nil {
 		if err != context.Canceled {
 			logger.Debug("[CheckCountry] IP = %s Error = %v", ip, err)
@@ -212,26 +215,7 @@ func CheckCountry(ip *shit.IP, ctx ...context.Context) bool {
 		return false
 	}
 
-	body, err := io.ReadAll(resp.Body)
-	resp.Body.Close()
-	if err != nil {
-		logger.Debug("[CheckCountry] IP = %s Error = %v", ip, err)
-		return false
-	}
-
-	resp, err = cli.Get("https://ipapi.com/ip_api.php?ip=" + strings.TrimSpace(string(body)))
-	if err != nil {
-		if err != context.Canceled {
-			logger.Debug("[CheckCountry] IP = %s Error = %v", ip, err)
-		}
-		return false
-	}
-	if resp == nil {
-		logger.Warn("[CheckCountry] IP = %s Error = Response is nil.", ip)
-		return false
-	}
-
-	var obj IPAPIJSON
+	var obj IPINFOJSON
 	de := json.NewDecoder(resp.Body)
 	err = de.Decode(&obj)
 	resp.Body.Close()
