@@ -141,8 +141,8 @@ func (p *Proxy) Socks() {
 						return
 					}
 
-					//request.URL.Path = dest.URL() + request.URL.Path
-					request.URL.Path = dest.Scheme() + "://" + request.Host + request.URL.Path
+					request.URL.Path = dest.URL() + request.URL.Path
+					//request.URL.Path = dest.Scheme() + "://" + request.Host + request.URL.Path
 					request.Header.Set("Proxy-Connection", "Keep-Alive")
 
 					err = request.WriteProxy(proxy)
